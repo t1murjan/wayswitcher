@@ -1,4 +1,4 @@
-Waywitcher (Caramba/Punto Analog for Linux)
+Wayswitcher (Caramba/Punto Analog for Linux)
 
 Простая программа на Python для автоматической или полуавтоматической смены раскладки последнего напечатанного слова или выделенного текста в Wayland.
 
