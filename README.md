@@ -80,7 +80,7 @@ EOF
 ### Запуск
 
 ```bash
-python3 wayswitcher.py
+python wayswitcher-g4.py
 ```
 
 Откроется небольшое окно управления.
