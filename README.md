@@ -217,6 +217,3 @@ sudo apt install wl-clipboard
 
 ---
 
-## Лицензия
-
-MIT — делайте что хотите.
