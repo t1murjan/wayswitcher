@@ -43,10 +43,9 @@ sudo dnf install python3 python3-evdev wl-clipboard polkit python3-tkinter
 ### 2. Скачать скрипт
 
 ```bash
-curl -O https://your-host/wayswitcher-g2.py
-# или просто скопируйте файл в удобную папку, например:
+# просто скопируйте файл в удобную папку, например:
 mkdir -p ~/.local/bin
-cp wayswitcher-g2.py ~/.local/bin/wayswitcher.py
+cp wayswitcher-g4.py ~/.local/bin/wayswitcher.py
 ```
 
 ### 3. Сделать исполняемым (опционально)
