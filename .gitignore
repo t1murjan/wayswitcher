@@ -4,19 +4,38 @@ __pycache__/
 *.pyc
 *.pyo
 *.pyd
-.Python
-env/
+*.py~
+*.py.class
+*.py.backup
+*.swp
+*.swo
+
+# Virtual environments
 venv/
 .venv/
-.env
-.env.local
-.env.*
-requirements.txt.bak
-pip-log.txt
-pip-delete-this-directory.txt
+env/
+ENV/
 
-# Logs
-*.log
+# Distribution / packaging
+dist/
+build/
+*.egg
+*.egg-info/
+.eggs/
+.installed.cfg
+*.egg-info/
+.installed.cfg
+*.egg-link
+
+# Testing
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage/
+htmlcov/
+.tox/
+.pytest_cache/
 
 # IDE
 .vscode/
@@ -24,15 +43,41 @@ pip-delete-this-directory.txt
 *.swp
 *.swo
 
-# OS
+# Logs
+*.log
+
+# Environment variables
+.env
+.env.local
+*.env
+*.env.*
+
+# OS generated files
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
 Thumbs.db
-```
 
-Wait, let me reconsider. The only changes are adding a Python file and README.md, and modifying README.md. There are no build artifacts, dependency directories, or temporary files in the change list that would require ignoring.
+# Temporary files
+*.tmp
+*.temp
+*~
 
-Actually, since the changes only include source files (.py, .md) and no build artifacts or dependencies, the output should be empty.
+# MyPy
+.mypy_cache/
+.dmypy.json
+dmypy.json
 
-```gitignore
-
+# Build artifacts
+*.o
+*.obj
+*.out
+*.exe
+*.dll
+*.so
+*.a
+*.class
 ```
