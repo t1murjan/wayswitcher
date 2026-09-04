@@ -14,10 +14,17 @@ Shift Shift → текст исправлен, раскладка переклю
 | Пакет | Зачем |
 |---|---|
 | Python 3.8+ | интерпретатор |
-| `python-evdev` | перехват клавиатуры |
+| `python-evdev` | перехват клавиатуры через evdev |
 | `wl-clipboard` | работа с буфером обмена (`wl-copy`, `wl-paste`) |
 | `polkit` (`pkexec`) | запуск демона с правами root |
 | `python-tkinter` | графический интерфейс |
+| Группы `input` и `uinput` | доступ к устройствам ввода и созданию виртуальной клавиатуры |
+
+> **Важно:** Для работы скрипта пользователь должен состоять в группах `input` и `uinput`. Добавьте пользователя командой:
+> ```bash
+> sudo usermod -aG input,uinput $USER
+> ```
+> После этого требуется перезагрузка или перелогин.
 
 ---
 
@@ -28,17 +35,22 @@ Shift Shift → текст исправлен, раскладка переклю
 **Arch Linux / Manjaro:**
 ```bash
 sudo pacman -S python python-evdev wl-clipboard polkit tk
+sudo usermod -aG input,uinput $USER
 ```
 
 **Ubuntu / Debian:**
 ```bash
 sudo apt install python3 python3-evdev wl-clipboard policykit-1 python3-tk
+sudo usermod -aG input,uinput $USER
 ```
 
 **Fedora:**
 ```bash
 sudo dnf install python3 python3-evdev wl-clipboard polkit python3-tkinter
+sudo usermod -aG input,uinput $USER
 ```
+
+> **Важно:** После добавления в группы `input` и `uinput` необходимо выйти из системы и зайти снова (или перезагрузиться).
 
 ### 2. Скачать скрипт
 
@@ -190,6 +202,23 @@ python wayswitcher-g4.py
 systemctl status polkit
 ```
 
+Также проверьте, что пользователь состоит в группе `input`:
+```bash
+groups $USER
+```
+
+**Ошибка доступа к /dev/uinput**
+
+```bash
+# Проверьте наличие группы uinput
+grep uinput /etc/group
+
+# Если группы нет, создайте её и добавьте пользователя
+sudo groupadd uinput
+sudo usermod -aG uinput $USER
+# Требуется перелогин или перезагрузка
+```
+
 **Конвертация не срабатывает**
 
 Попробуйте увеличить таймаут до `0.6`–`0.8` секунды — возможно, вы нажимаете Shift слишком медленно.
@@ -213,6 +242,14 @@ sudo pacman -S wl-clipboard
 # Ubuntu:
 sudo apt install wl-clipboard
 ```
+
+**Дублирование нажатий клавиш**
+
+Убедитесь, что устройство захвачено в эксклюзивном режиме. В логах должно быть сообщение:
+```
+Устройство /dev/input/eventX захвачено в эксклюзивном режиме.
+```
+Если этого не происходит, проверьте права доступа и наличие других процессов, использующих клавиатуру.
 
 ---
 
