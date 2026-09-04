@@ -1,0 +1,83 @@
+```gitignore
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.py~
+*.py.class
+*.py.backup
+*.swp
+*.swo
+
+# Virtual environments
+venv/
+.venv/
+env/
+ENV/
+
+# Distribution / packaging
+dist/
+build/
+*.egg
+*.egg-info/
+.eggs/
+.installed.cfg
+*.egg-info/
+.installed.cfg
+*.egg-link
+
+# Testing
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage/
+htmlcov/
+.tox/
+.pytest_cache/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log
+
+# Environment variables
+.env
+.env.local
+*.env
+*.env.*
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+*~
+
+# MyPy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Build artifacts
+*.o
+*.obj
+*.out
+*.exe
+*.dll
+*.so
+*.a
+*.class
+```

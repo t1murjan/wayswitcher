@@ -7,6 +7,8 @@ import os
 import uuid
 import tkinter as tk
 from tkinter import ttk, messagebox
+from PIL import Image, ImageDraw
+import pystray
 
 # --- ГЛОБАЛЬНЫЕ НАСТРОЙКИ ---
 CONFIG_DIR = os.path.expanduser("~/.config/wayland_switcher")
@@ -284,6 +286,9 @@ THEMES = {
         "btn_fg":       "#1a1a1a",
         "toggle_bg":    "#d1d5db",
         "dot":          "#6b7280",
+        "menu_bg":      "#ffffff",
+        "menu_fg":      "#1a1a1a",
+        "menu_active":  "#2563eb",
     },
     "dark": {
         "bg":           "#1a1a1a",
@@ -301,6 +306,9 @@ THEMES = {
         "btn_fg":       "#f0f0f0",
         "toggle_bg":    "#374151",
         "dot":          "#9ca3af",
+        "menu_bg":      "#2d2d2d",
+        "menu_fg":      "#f0f0f0",
+        "menu_active":  "#3b82f6",
     }
 }
 
@@ -315,6 +323,8 @@ class SwitcherApp:
         self.layout_shortcut = self.load_layout_shortcut()
         self.is_running = False
         self._proc = None
+        self.tray_icon = None
+        self.minimized_to_tray = False
 
         # FIX тема: загружаем сохранённую тему
         self.current_theme = self.load_theme()
@@ -325,6 +335,7 @@ class SwitcherApp:
         self.build_ui()
         self.apply_theme()
         self.check_status_loop()
+        self.setup_tray()
 
     # ---- Тема ----
 
@@ -372,51 +383,83 @@ class SwitcherApp:
         self.root.configure(bg=t["bg"])
 
         # Фреймы
-        for frame in [self.main_frame, self.card_frame, self.timeout_frame, self.bottom_frame]:
-            frame.configure(bg=t["bg_card"] if frame == self.card_frame else t["bg"])
+        for frame in [self.main_frame, self.card_frame, self.timeout_frame, self.layout_frame, self.bottom_frame]:
+            if hasattr(self, 'main_frame') and frame == self.main_frame:
+                frame.configure(bg=t["bg"])
+            elif hasattr(self, 'card_frame') and frame == self.card_frame:
+                frame.configure(bg=t["bg_card"], highlightbackground=t["border"])
+            elif hasattr(self, 'timeout_frame') and frame == self.timeout_frame:
+                frame.configure(bg=t["bg_card"])
+            elif hasattr(self, 'layout_frame') and frame == self.layout_frame:
+                frame.configure(bg=t["bg_card"])
+            elif hasattr(self, 'bottom_frame') and frame == self.bottom_frame:
+                frame.configure(bg=t["bg"])
 
         # Лейблы
-        self.title_lbl.configure(bg=t["bg"], fg=t["fg"])
-        self.status_label.configure(bg=t["bg_card"], fg=self._get_status_color(t))
-        self.timeout_lbl.configure(bg=t["bg_card"], fg=t["fg_muted"])
-        self.theme_lbl.configure(bg=t["bg"], fg=t["fg_muted"])
+        if hasattr(self, 'title_lbl'):
+            self.title_lbl.configure(bg=t["bg"], fg=t["fg"])
+        if hasattr(self, 'status_label'):
+            self.status_label.configure(bg=t["bg_card"], fg=self._get_status_color(t))
+        if hasattr(self, 'timeout_lbl'):
+            self.timeout_lbl.configure(bg=t["bg_card"], fg=t["fg_muted"])
+        if hasattr(self, 'theme_lbl'):
+            self.theme_lbl.configure(bg=t["bg"], fg=t["fg_muted"])
+        if hasattr(self, 'layout_lbl'):
+            self.layout_lbl.configure(bg=t["bg_card"], fg=t["fg_muted"])
+        if hasattr(self, 'hint_lbl'):
+            self.hint_lbl.configure(bg=t["bg"], fg=t["fg_muted"])
 
         # Карточка статуса
-        self.card_frame.configure(bg=t["bg_card"], highlightbackground=t["border"], highlightthickness=1)
+        if hasattr(self, 'card_frame'):
+            self.card_frame.configure(bg=t["bg_card"], highlightbackground=t["border"], highlightthickness=1)
 
         # Кнопки
-        self.toggle_btn.configure(
-            bg=t["accent"], fg=t["accent_fg"],
-            activebackground=t["accent_hover"], activeforeground=t["accent_fg"],
-        )
-        self.save_btn.configure(
-            bg=t["btn_bg"], fg=t["btn_fg"],
-            activebackground=t["border"], activeforeground=t["btn_fg"],
-        )
+        if hasattr(self, 'toggle_btn'):
+            self.toggle_btn.configure(
+                bg=t["accent"], fg=t["accent_fg"],
+                activebackground=t["accent_hover"], activeforeground=t["accent_fg"],
+            )
+        if hasattr(self, 'save_btn'):
+            self.save_btn.configure(
+                bg=t["btn_bg"], fg=t["btn_fg"],
+                activebackground=t["border"], activeforeground=t["btn_fg"],
+            )
+        if hasattr(self, 'theme_btn'):
+            moon = "☾" if self.current_theme == "light" else "☀"
+            self.theme_btn.configure(
+                text=moon,
+                bg=t["bg"], fg=t["dot"],
+                activebackground=t["bg"], activeforeground=t["fg"],
+            )
 
         # Поле ввода
-        self.timeout_entry.configure(
-            bg=t["entry_bg"], fg=t["fg"],
-            insertbackground=t["fg"],
-            highlightbackground=t["border"],
-            highlightcolor=t["accent"],
-        )
+        if hasattr(self, 'timeout_entry'):
+            self.timeout_entry.configure(
+                bg=t["entry_bg"], fg=t["fg"],
+                insertbackground=t["fg"],
+                highlightbackground=t["border"],
+                highlightcolor=t["accent"],
+            )
 
         # Выпадающий список раскладки
-        self.layout_lbl.configure(bg=t["bg_card"], fg=t["fg_muted"])
-        self.layout_menu.configure(
-            bg=t["entry_bg"], fg=t["fg"],
-            activebackground=t["accent"], activeforeground=t["accent_fg"],
-            highlightbackground=t["border"],
-        )
-
-        # Кнопка темы (луна/солнце)
-        moon = "☾" if self.current_theme == "light" else "☀"
-        self.theme_btn.configure(
-            text=moon,
-            bg=t["bg"], fg=t["dot"],
-            activebackground=t["bg"], activeforeground=t["fg"],
-        )
+        if hasattr(self, 'layout_menu'):
+            self.layout_menu.configure(
+                bg=t["entry_bg"], fg=t["fg"],
+                activebackground=t["accent"], activeforeground=t["accent_fg"],
+                highlightbackground=t["border"],
+            )
+            # FIX: Обновляем цвета внутреннего меню OptionMenu
+            try:
+                menu = self.layout_menu.nametowidget(self.layout_menu.menuname)
+                menu.configure(
+                    bg=t["menu_bg"],
+                    fg=t["menu_fg"],
+                    activebackground=t["menu_active"],
+                    activeforeground=t["accent_fg"],
+                    selectcolor=t["menu_active"],
+                )
+            except Exception:
+                pass
 
     def _get_status_color(self, t=None):
         if t is None:
@@ -541,10 +584,10 @@ class SwitcherApp:
         self.hint_lbl = tk.Label(
             self.bottom_frame,
             text="Двойной Shift — конвертация последнего слова",
-            font=("Helvetica", 8), fg="#888"
+            font=("Helvetica", 8)
         )
         self.hint_lbl.pack()
-        self.hint_lbl.configure(bg=t["bg"])
+        self.hint_lbl.configure(bg=t["bg"], fg=t["fg_muted"])
 
     # ---- Сервис ----
 
@@ -660,9 +703,79 @@ class SwitcherApp:
         except ValueError:
             messagebox.showwarning("Ошибка", "Введите корректное число от 0.1 до 2.0 (например, 0.4)")
 
-    def on_closing(self):
+    def create_tray_icon(self):
+        """Создаёт изображение для иконки в трее."""
+        t = THEMES[self.current_theme]
+        size = 64
+        image = Image.new('RGBA', (size, size), (0, 0, 0, 0))
+        draw = ImageDraw.Draw(image)
+        
+        # Рисуем круглый фон с обводкой
+        bg_color = t["accent"] if self.is_running else t["toggle_bg"]
+        border_color = t["border"] if self.current_theme == "dark" else "#cccccc"
+        draw.ellipse([2, 2, size-2, size-2], fill=bg_color, outline=border_color, width=2)
+        
+        # Рисуем символ клавиатуры или статуса
+        icon_color = t["accent_fg"] if self.is_running else t["dot"]
+        # Простой символ "W" для Wayland
+        draw.text((size//2 - 9, size//2 - 11), "W", fill=icon_color, font_size=26)
+        
+        return image
+
+    def setup_tray(self):
+        """Настраивает иконку в системном трее."""
+        menu_items = (
+            pystray.MenuItem('Показать', self.restore_from_tray, default=True),
+            pystray.MenuItem('Запустить/Остановить', self.toggle_from_tray),
+            pystray.MenuItem('Тема', self.toggle_theme_from_tray),
+            pystray.MenuItem('Выход', self.exit_app),
+        )
+        
+        icon_image = self.create_tray_icon()
+        self.tray_icon = pystray.Icon("wayland_switcher", icon_image, "Wayland Switcher", menu_items)
+        # Запускаем трей в отдельном потоке
+        threading.Thread(target=self.tray_icon.run, daemon=True).start()
+
+    def toggle_theme_from_tray(self, icon=None, item=None):
+        """Переключает тему из трея."""
+        self.root.after(0, self.toggle_theme)
+        # Обновляем иконку после смены темы
+        self.root.after(200, lambda: self.update_tray_icon())
+
+    def update_tray_icon(self):
+        """Обновляет иконку в трее."""
+        if self.tray_icon:
+            self.tray_icon.icon = self.create_tray_icon()
+
+    def restore_from_tray(self, icon=None, item=None):
+        """Восстанавливает окно из трея."""
+        self.minimized_to_tray = False
+        self.root.after(0, lambda: self.root.deiconify())
+        self.root.after(0, lambda: self.root.focus_force())
+        self.root.after(0, lambda: self.root.lift())
+        # Обновляем иконку в трее на актуальную
+        self.root.after(100, lambda: self.update_tray_icon())
+
+    def toggle_from_tray(self, icon=None, item=None):
+        """Переключает статус сервиса из трея."""
+        self.root.after(0, self.toggle_service)
+        # Обновляем иконку после переключения статуса
+        self.root.after(500, lambda: self.update_tray_icon())
+
+    def exit_app(self, icon=None, item=None):
+        """Полный выход из приложения."""
         self.stop_service()
-        self.root.destroy()
+        if self.tray_icon:
+            self.tray_icon.stop()
+        self.root.after(0, self.root.destroy)
+
+    def on_closing(self):
+        """Обработчик закрытия окна — сворачиваем в трей вместо закрытия."""
+        self.root.withdraw()  # Скрываем окно
+        self.minimized_to_tray = True
+        # Обновляем иконку в трее на актуальную
+        if self.tray_icon:
+            self.tray_icon.icon = self.create_tray_icon()
 
 
 def main():
